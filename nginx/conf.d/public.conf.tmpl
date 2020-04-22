@@ -1,0 +1,51 @@
+server {
+    listen {{ var "SERVER_PORT" | default "80" }} default_server;
+    server_name {{ var "SERVER_NAME" | default "localhost" }};
+    charset utf-8;
+    root /var/www/laravel/public/;
+
+    # SSL terminationをする場合
+    #ssl on;
+    #vssl_certificate      /path/to/cert.pem;
+    #ssl_certificate_key  /path/to/key.pem;
+
+    autoindex off;
+    location / {
+        try_files $uri $uri/ /index.php?$query_string;
+        index index.php;
+    }
+
+    location ~ \.php$ {
+        fastcgi_split_path_info ^(.+\.php)(/.+)$;
+        if (!-f $document_root$fastcgi_script_name) {
+            return 404;
+        }
+        if (!-e $request_filename){
+            rewrite ^(.*)$ /%1 redirect;
+        }
+        if (!-e $request_filename){
+            rewrite ^(.*)$ /index.php break;
+        }
+        fastcgi_pass php:9000;
+        fastcgi_index index.php;
+        include fastcgi_params;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        fastcgi_param PATH_INFO $fastcgi_path_info;
+     
+
+        add_header $request_filename $request_filename;
+        add_header $document_root$fastcgi_script_name $document_root$fastcgi_script_name; 
+       
+        {{ if var "LOG_STDOUT" }}
+        access_log  /dev/stdout json;
+        error_log   /dev/stderr;
+        {{ else }}
+        access_log  /var/log/nginx/backend_access.log json;
+        error_log   /var/log/nginx/backend_error.log;
+        {{ end }}
+        {{ if var "BASIC_AUTH_FILE" }}
+        auth_basic "Restricted";
+        auth_basic_user_file {{ var "BASIC_AUTH_FILE" }};
+        {{ end }}
+    }
+}

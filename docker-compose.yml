@@ -1,0 +1,88 @@
+version: '3'                                    # docker-composeの使用バージョン
+services:                                       # コンテナから作られるサービス達。コンテナの設定を以下に。
+  nginx:                                         # コンテナの名前
+    build:                                        # イメージ(コンテナのテンプレ)を作るためのDockerfileがある場所
+      context: ./nginx                    # Dockerfileの場所
+    ports:                                      # 公開port
+      - 80:80                                  # 外部公開ポート番号 : コンテナのポート番号
+    volumes:                                  # マウント。コンテナのデータと、手元のデータが同期する。
+      - ./www:/var/www:cached     # 手元のパス : コンテナのパス : キャッシュオプション
+      - ./log:/var/log/nginx:cached #logファイル
+    depends_on:
+      - php
+    environment:                  #環境変数
+      WORKER_PROCESSES: 2
+      WORKER_CONNECTIONS: 1024
+      KEEPALIVE_TIMEOUT: 65
+      BACKEND_HOST: php:9000
+      BACKEND_MAX_FAILS: 3
+      BACKEND_FAIL_TIMEOUT: 10s
+      SERVER_PORT: 80
+      SERVER_NAME: appnet_nginx
+      LOG_STDOUT: "true"
+    networks:                            # 対象のコンテナとリンク。 /etc/hostsにローカルipが書かれる
+      - appnet                                      # 172.17.0.3 php とか書かれる
+      
+  php:
+    build:
+      context: ./phpfpm
+    volumes: 
+      - ./www:/var/www:cached
+    depends_on:
+      - mysql
+    environment:
+      #db接続設定
+      db_connection: mysql
+      db_host: mysql
+      db_port: 3306
+      db_database: laravel
+      db_username: laravel
+      db_password: passworddddd
+      #外部認証設定
+      TWITTER_CLIENT_KEY: 
+      TWITTER_CLIENT_SECRET: 
+      TWITTER_CLIENT_CALLBACK: http://laravel-cam.com/auth/login/twitter/callback
+      GOOGLE_CLIENT_ID: 
+      GOOGLE_CLIENT_SECRET: 
+      GOOGLE_CALLBACK_URL: http://laravel-cam.com/auth/login/google/callback
+    networks:
+      - appnet
+  
+  mysql:
+    restart: always                     # コンテナが止まった時に再起動する
+    image: mysql:latest             # コンテナを作るためのイメージ
+    volumes:
+      - ./mysql:/var/lib/mysql
+    environment:
+      #DB初期設定
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: laravel
+      MYSQL_USER: laravel
+      MYSQL_PASSWORD: passworddddd
+      TZ: 'Asia/Tokyo'
+      command: mysqld --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    ports:
+      - 3306:3306
+    networks:
+      - appnet
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    environment:
+      PMA_ARBITRARY: 1
+      PMA_HOST: mysql:3306
+      PMA_USER: laravel
+      PMA_PASSWORD: passworddddd
+      DB_PASSWORD: secret
+    depends_on:
+      - mysql
+    ports:
+      - 8080:80
+    volumes:
+      - "./phpmyadmin/sessions:/sessions"
+    networks:
+      - appnet
+
+networks:
+  appnet:
+    external: true

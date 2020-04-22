@@ -1,0 +1,84 @@
+laravel ルートで403
+    location / でindexがセットされてない
+
+laravel ルート以外で４０４
+    public/index.phpを通してパス変換できてない
+    publicないの.httaaccessの設定をwebサーバーに設定する
+
+
+npm installで npm does not support Node.js v10.15.2というエラーがでる
+    node.jsをアップデートする必要がある
+    npm install -g n
+    n --latest
+    n latest
+
+
+npm WARN saveError ENOENT: no such file or directory, open '/var/www/package.json'
+    初期化してない
+    npm initは自動でできないので
+    jsonを読ませる
+    /var/www/package.json
+
+laravel ソーシャルログイン
+    ui
+    php artisan migrate
+    composer require laravel/socialite
+    以下参考にインストール
+        https://socialiteproviders.netlify.com/providers/google.html
+    config/app.phpのproviderにサービス追加
+    app/providers/EventServiceProvider.phpのlistenにイベントハンドラ追加
+    config/service.phpにプロバイダ追加
+        'twitter' => [
+        'client_id' => env('TWITTER_CLIENT_KEY'),
+        'client_secret' => env('TWITTER_CLIENT_SECRET'),
+        'redirect' => env('TWITTER_CLIENT_CALLBACK'),
+        ],
+    .envファイルから認証情報を追加
+    ルーティング設定
+        Route::get('auth/login/{provider}', 'Auth\SocialAccountController@redirectToProvider');
+        Route::get('auth/login/{provider}/callback', 'Auth\SocialAccountController@handleProviderCallback');
+    login画面にボタン追加
+        <a href="auth/login/facebook">Sign in with Facebook</a>
+        <a href="auth/login/twitter">Sign in with Twitter</a>
+    DB設定
+        DB編集用のパッケージインストール
+        composer require doctrine/dbal
+        タイムスタンプ_prepare_users_table.phpが作成される
+        php artisan make:migration prepare_users_table --table users
+            設定を追加
+            $table->string('password')->nullable()->change();
+            $table->string('avatar')->nullable();
+            $table->string('google_id')->unique()->nullable();          
+            $table->string('google_name')->nullable();
+            $table->string('twitter_id')->unique()->nullable();          
+            $table->string('twitter_name')->nullable();
+        php artisan migrate
+    コントーラーの作成
+        認証系コントローラを同じディレクトリにまとめるため、/auth内に作成。
+        app/Http/Contorollers/Auth/SocialAccountController.phpが作成される
+        php artisan make:controller 'Auth\SocialAccountController'
+VPSにドメイン設定する
+
+GCPにauth設定
+    Google Cloud Platform
+    プロジェクトを作成し、認証情報追加
+    認証ページもいるらしい？
+
+Twitterに新アップ
+    App name (required)：アプリ名を記載します。
+    Application description：アプリの説明を記載します。
+    Website URL (required)：LaravelプロジェクトをアップしたURLを記載します。
+    Enable Sign in with Twitter：チェックを入れます。
+    Callback URLs：LaravelプロジェクトのコールバックURLを記載します。
+    Terms of Service URL：利用規約のURLを記載します。
+    Privacy policy URL：プライバシーポリシーのURLを記載します。
+    Tell us how this app will be used：このアプリの使い方を記載します。
+
+sosialite 外部ログインボタン押したら404
+    http://laravel-cam.com/{provider}/callbackでコールバックしないといけない
+    プロバイダ側も同じ
+    ツイッターの認証キーはコンシューマーのものを使う
+    プロバイダーはやっぱり必要。
+    だがグーグルが古い。これどうするか。
+    provider.phpの古いエンドポイントをバッシュで書き換えに行く
+    
