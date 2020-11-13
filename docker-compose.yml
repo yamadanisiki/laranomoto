@@ -50,9 +50,10 @@ services:                                       # コンテナから作られる
   
   mysql:
     restart: always                     # コンテナが止まった時に再起動する
-    image: mysql:latest             # コンテナを作るためのイメージ
+    image: mariadb:10.4            # コンテナを作るためのイメージ
     volumes:
       - ./mysql:/var/lib/mysql
+      - ./mysql/my.cnf:/etc/mysql/my.cnf
     environment:
       #DB初期設定
       MYSQL_ROOT_PASSWORD: root

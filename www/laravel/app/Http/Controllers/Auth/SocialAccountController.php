@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Socialite; //⇦追記
 use DB;
-use App\User;
+use App\Models\User;
 
 class SocialAccountController extends Controller
 {
